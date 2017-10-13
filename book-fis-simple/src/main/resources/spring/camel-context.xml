@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cxf="http://camel.apache.org/schema/cxf"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+
+	<bean id="jsonProvider" class="org.codehaus.jackson.jaxrs.JacksonJsonProvider" />
+
+	<cxf:rsServer id="restEndpoint" address="http://0.0.0.0:8080"
+		serviceClass="com.redhat.book.BookService">
+		<cxf:providers>
+			<ref bean="jsonProvider" />
+		</cxf:providers>
+	</cxf:rsServer>
+
+	<bean id="beanProcessor" class="com.redhat.book.BookServiceImpl" />
+
+
+	<camelContext xmlns="http://camel.apache.org/schema/spring">
+		<route id="simple-route">
+			<from id="route-rest" uri="cxfrs:bean:restEndpoint" />
+			
+			<log message="Operation Name: ${header.operationName}" />
+			<choice>
+				<when>
+					<simple>${header.operationName} == "getAllBooks"</simple>
+					<bean ref="beanProcessor" method="getAllBooks" />
+				</when>
+				<when>
+					<simple>${header.operationName} == "find"</simple>
+					<bean ref="beanProcessor" method="findBook" />
+				</when>
+				<when>
+					<simple>${header.operationName} == "delete"</simple>
+					<bean ref="beanProcessor" method="deleteBook" />
+				</when>
+			</choice>
+			<marshal>
+				<json prettyPrint="true" library="Jackson" />
+			</marshal>
+		</route>
+	</camelContext>
+
+</beans>
